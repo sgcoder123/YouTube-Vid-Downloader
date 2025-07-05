@@ -1,15 +1,25 @@
-from pytube import YouTube
 import sys
+import yt_dlp
+
+if len(sys.argv) < 2:
+    print("Please provide a YouTube video link.")
+    sys.exit(1)
 
 link = sys.argv[1]
 
-yt = YouTube(link)
+# Set download options
+output_path = '/Users/saig/Desktop/Random Stuff/YouTube-Vid-Downloader/%(title)s.%(ext)s'
+opts = {
+    'outtmpl': output_path,
+    'format': 'bestvideo+bestaudio/best',
+    'merge_output_format': 'mp4',
+    'quiet': False,
+}
 
-print(f"Title: {yt.title}")
-print(f"Views: {yt.views}")
-print(f"Length: {yt.length} seconds")
-
-ytdl = yt.streams.get_highest_resolution()
-print(f"Downloading {ytdl.title}...")
-ytdl.download()
-print("Download completed!")
+with yt_dlp.YoutubeDL(opts) as ydl:
+    info = ydl.extract_info(link, download=True)
+    print(f"Title: {info.get('title')}")
+    print(f"Views: {info.get('view_count')}")
+    print(f"Length: {info.get('duration')} seconds")
+    print(f"Downloaded to: {output_path % info}")
+    print("Download completed!")
