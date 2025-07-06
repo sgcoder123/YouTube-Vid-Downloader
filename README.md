@@ -59,11 +59,6 @@ templates/
   index.html     # Main HTML template
 ```
 
-## Notes
-- **No desktop dialogs:** All folder selection and downloads are handled via the web interface. Tkinter-based dialogs are disabled for deployment.
-- **Cookies for restricted videos:** To download age-restricted/private videos, see the [yt-dlp cookies guide](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp).
-- **FFmpeg:** Ensure FFmpeg is available in your environment for audio/video conversion.
-
 ## License
 MIT
 
