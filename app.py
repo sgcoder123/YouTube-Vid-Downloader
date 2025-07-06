@@ -6,12 +6,10 @@ import yt_dlp
 import os
 import tkinter as tk
 from tkinter import filedialog
+import tempfile
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'  # Change this in production
-
-DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), 'downloads')
-os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 
 class DownloadForm(FlaskForm):
     link = StringField('YouTube Video URL', validators=[DataRequired(), URL()])
@@ -32,8 +30,7 @@ def index():
     download_url = None
     filename = None
     video_info = None
-    downloads = os.listdir(DOWNLOADS_DIR)
-    downloads = [f for f in downloads if not f.endswith('.temp.mp4')]
+    downloads = []  # No longer list project downloads
     if request.method == 'POST':
         link = form.link.data
         format_choice = request.form.get('format', 'best')
@@ -49,8 +46,8 @@ def index():
                         'thumbnail': info.get('thumbnail'),
                         'duration': info.get('duration'),
                     }
-                # Download if submit pressed
-                info, final_path = download_youtube_video(link, DOWNLOADS_DIR, format_choice)
+                # Download to a temp directory unique to this user/session
+                info, final_path = download_youtube_video(link, format_choice)
                 filename = os.path.basename(final_path)
                 download_url = url_for('download_file', filename=filename)
                 flash(f"Downloaded: {filename}", 'success')
@@ -60,12 +57,13 @@ def index():
 
 @app.route('/downloads/<filename>')
 def download_file(filename):
-    return send_from_directory(DOWNLOADS_DIR, filename, as_attachment=True)
+    # Serve from the system temp directory
+    temp_dir = tempfile.gettempdir()
+    return send_from_directory(temp_dir, filename, as_attachment=True)
 
-def download_youtube_video(link, folder_selected, format_choice='best'):
-    if not folder_selected:
-        raise ValueError("No folder selected.")
-    output_path = os.path.join(folder_selected, '%(title)s.%(ext)s')
+def download_youtube_video(link, format_choice='best'):
+    temp_dir = tempfile.gettempdir()
+    output_path = os.path.join(temp_dir, '%(title)s.%(ext)s')
     if format_choice == 'audio':
         opts = {
             'outtmpl': output_path,
@@ -99,4 +97,4 @@ def download_youtube_video(link, folder_selected, format_choice='best'):
         return info, filename
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5050)
+    app.run(debug=True, host='127.0.0.1', port=5050)

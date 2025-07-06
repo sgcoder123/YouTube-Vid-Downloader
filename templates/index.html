@@ -211,12 +211,12 @@
             background: linear-gradient(90deg, #fbbf24 0%, #f59e42 100%);
         }
         .light-mode {
-            background: white !important;
+            background: #f8fafc !important;
             color: #18181b !important;
         }
         .light-mode .container {
-            background: #f4f4f5 !important;
-            box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+            background: #fff !important;
+            box-shadow: 0 4px 32px rgba(251,191,36,0.10);
         }
         .light-mode .header svg rect {
             fill: #FF0000;
@@ -224,39 +224,53 @@
         .light-mode .btn {
             background: linear-gradient(90deg, #fbbf24 0%, #f59e42 100%);
             color: #18181b;
+            box-shadow: 0 2px 12px rgba(251,191,36,0.10);
         }
         .light-mode .btn:hover {
             background: linear-gradient(90deg, #f59e42 0%, #fbbf24 100%);
+            box-shadow: 0 6px 24px rgba(251,191,36,0.18);
         }
         .light-mode .downloads-list li,
         .light-mode input[type="text"],
         .light-mode select {
-            background: #fff !important;
+            background: #f3f4f6 !important;
             color: #18181b !important;
+            border: 1px solid #e5e7eb;
         }
         .light-mode .downloads-list li:hover,
         .light-mode input[type="text"]:hover,
         .light-mode select:hover {
             background: #fbbf24 !important;
             color: #18181b !important;
+            box-shadow: 0 0 0 2px #fbbf24;
         }
         .light-mode .video-info img {
             box-shadow: 0 2px 12px rgba(251,191,36,0.10);
+            background: #fff;
         }
         .light-mode .footer {
-            color: #444;
+            color: #666;
         }
         .light-mode .flash-success {
-            background: #d1fae5;
+            background: #e0fbe6;
             color: #059669;
+            border: 1px solid #bbf7d0;
         }
         .light-mode .flash-danger {
             background: #fee2e2;
             color: #b91c1c;
+            border: 1px solid #fecaca;
         }
         .light-mode .spinner {
             border: 4px solid #e5e7eb;
             border-top: 4px solid #fbbf24;
+        }
+        .light-mode .bounce-instruction {
+            color: #f59e42;
+            text-shadow: 0 2px 8px #fbbf2433;
+        }
+        .light-mode .downloads-list h2 {
+            color: #f59e42;
         }
         @media (max-width: 500px) {
             .container {
@@ -300,25 +314,6 @@
             <span>{{ video_info['duration'] }} seconds</span>
         </div>
         {% endif %}
-        {% if download_url and filename %}
-            <div style="margin-top:1.5rem; text-align:center;">
-                <div class="bounce-instruction">Click the download link below to download your file:</div>
-                <a href="{{ download_url }}" class="btn animated-btn" download style="display:inline-block; min-width:180px;">Download {{ filename }}</a>
-            </div>
-        {% endif %}
-        <div class="downloads-list">
-            <h2>Recent Downloads</h2>
-            <ul>
-                {% for file in downloads %}
-                <li>
-                    <span>{{ file }}</span>
-                    <a href="/downloads/{{ file }}" class="btn" style="padding:0.3rem 1rem; font-size:0.95rem;">Download</a>
-                </li>
-                {% else %}
-                <li style="color:#a1a1aa;">No downloads yet.</li>
-                {% endfor %}
-            </ul>
-        </div>
     </div>
     <div class="footer">
         Made with ❤️ by YouTube-Vid-Downloader | <a href="https://github.com/" style="color:#fbbf24;">GitHub</a>
