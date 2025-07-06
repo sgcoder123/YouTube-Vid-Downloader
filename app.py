@@ -4,8 +4,6 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, URL
 import yt_dlp
 import os
-import tkinter as tk
-from tkinter import filedialog
 import tempfile
 import io
 import threading
