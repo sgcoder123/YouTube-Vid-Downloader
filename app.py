@@ -166,13 +166,8 @@ def download_youtube_video_to_memory(link, format_choice='best'):
     from flask import current_app
     import platform
 
-    # Determine the user's Downloads folder in a cross-platform way
-    if platform.system() == 'Darwin':  # macOS
-        downloads_dir = str(Path.home() / 'Downloads')
-    elif platform.system() == 'Windows':
-        downloads_dir = str(Path.home() / 'Downloads')
-    else:  # Linux and others
-        downloads_dir = str(Path.home() / 'Downloads')
+    # Determine the temp directory for serverless (Vercel only allows /tmp)
+    downloads_dir = '/tmp'
 
     cookies_path = os.path.join(os.path.dirname(__file__), 'cookies.txt')
     # Use a temp file for yt_dlp output
@@ -201,7 +196,6 @@ def download_youtube_video_to_memory(link, format_choice='best'):
                 'progress_hooks': [ytdlp_progress_hook],
                 'logtostderr': False,
                 'force_overwrites': True,
-                'ffmpeg_location': '/opt/homebrew/bin/ffmpeg',
                 'postprocessor_hooks': [],
                 **common_opts
             }
@@ -219,7 +213,6 @@ def download_youtube_video_to_memory(link, format_choice='best'):
                 'progress_hooks': [ytdlp_progress_hook],
                 'logtostderr': False,
                 'force_overwrites': True,
-                'ffmpeg_location': '/opt/homebrew/bin/ffmpeg',
                 'postprocessor_hooks': [],
                 **common_opts
             }
@@ -238,7 +231,6 @@ def download_youtube_video_to_memory(link, format_choice='best'):
                 'progress_hooks': [ytdlp_progress_hook],
                 'logtostderr': False,
                 'force_overwrites': True,
-                'ffmpeg_location': '/opt/homebrew/bin/ffmpeg',
                 'postprocessor_hooks': [],
                 **common_opts
             }

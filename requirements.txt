@@ -1,4 +1,3 @@
 # requirements.txt for Vercel deployment
 yt-dlp
-tk
 flask
