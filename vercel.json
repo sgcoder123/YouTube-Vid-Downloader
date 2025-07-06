@@ -1,0 +1,4 @@
+{
+  "runtime": "python3.11",
+  "entrypoint": "wsgi.py"
+}

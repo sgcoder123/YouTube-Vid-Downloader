@@ -23,16 +23,6 @@ class DownloadForm(FlaskForm):
     link = StringField('YouTube Video URL', validators=[DataRequired(), URL()])
     submit = SubmitField('Download')
 
-# --- Folder Selection Endpoint (for desktop use) ---
-@app.route('/choose_folder', methods=['POST'])
-def choose_folder():
-    # Use Tkinter to open a folder dialog
-    root = tk.Tk()
-    root.withdraw()
-    folder_selected = filedialog.askdirectory(title="Select Download Folder")
-    root.destroy()
-    return jsonify({'folder': folder_selected})
-
 # --- Utility: Clean YouTube URL ---
 def clean_youtube_url(url):
     """
