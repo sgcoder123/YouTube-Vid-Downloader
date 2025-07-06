@@ -1,4 +1,13 @@
 import yt_dlp
+import tkinter as tk
+from tkinter import filedialog
+
+def choose_folder_dialog():
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    folder_selected = filedialog.askdirectory(title="Select Download Folder")
+    root.destroy()
+    return folder_selected
 
 def download_youtube_video(link, folder_selected):
     if not folder_selected:
