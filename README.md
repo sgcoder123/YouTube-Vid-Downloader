@@ -14,6 +14,10 @@ With this app, users can download YouTube videos or extract audio in their prefe
 
 This project is ideal for anyone seeking a distraction-free, web-based YouTube downloader that respects user privacy and is simple to run locally or deploy to the cloud.
 
+## Live Demo
+
+Try the app live on Vercel: [https://youtube-vid-downloader.vercel.app/](https://youtube-vid-downloader.vercel.app/)
+
 ## Features
 - **Download YouTube videos or audio** in your preferred format (video+audio, video only, audio only)
 - **No sign-up, no ads, no tracking**—your privacy is guaranteed
