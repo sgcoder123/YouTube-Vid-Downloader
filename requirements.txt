@@ -1,3 +1,5 @@
 # requirements.txt for Vercel deployment
 yt-dlp
 flask
+flask_wtf
+wtforms
