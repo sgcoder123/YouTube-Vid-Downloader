@@ -23,7 +23,8 @@ Try the app live on Vercel: [https://youtube-vid-downloader.vercel.app/](https:/
 - **No sign-up, no ads, no tracking**—your privacy is guaranteed
 - **Modern, responsive UI** with dark/light mode
 - **Instant downloads**—files are served directly, nothing is saved on the server
-- **Handles age-restricted and private videos** (with cookies, see FAQ)
+- **Smart bypass technology** - automatically handles age-restricted and bot-detected videos
+- **No manual setup required** - works out of the box for all videos
 
 ## Getting Started
 
@@ -52,6 +53,41 @@ To run the app locally:
 - [FFmpeg](https://ffmpeg.org/): Required by yt-dlp for audio/video conversion and merging (must be installed in the environment).
 
 These technologies work together to provide a seamless, private, and efficient YouTube downloading experience through a web interface.
+
+## Troubleshooting
+
+### Download Issues
+
+The app uses advanced bypass techniques to handle most YouTube restrictions automatically, including:
+
+- **Age-restricted videos**: Automatically handled with smart user agent rotation
+- **Bot detection**: Multiple bypass strategies applied automatically  
+- **Geo-blocked content**: Advanced header manipulation to bypass restrictions
+- **Rate limiting**: Intelligent retry mechanisms with randomized delays
+
+### Common Issues
+
+- **Video unavailable**: The video may be private, deleted, or region-locked beyond bypass capabilities
+- **Long videos**: Audio downloads may take longer due to conversion
+- **Format not available**: Try a different format option (some videos don't have all formats)
+- **Slow downloads**: High-quality videos take more time to process
+
+## FAQ
+
+**Q: Do I need to upload cookies or sign in?**
+A: No! The app automatically handles authentication and bypass requirements.
+
+**Q: Can I download age-restricted videos?**
+A: Yes, the app automatically applies bypass techniques for age-restricted content.
+
+**Q: What about private or unlisted videos?**
+A: The app will attempt to download them, but some private videos may not be accessible.
+
+**Q: Can I download playlists?**
+A: Currently, the app downloads individual videos. Paste the URL of a specific video from the playlist.
+
+**Q: Is this safe and legal?**
+A: The app only facilitates downloading, which is subject to YouTube's terms of service and your local laws.
 
 ## Project Structure
 ```

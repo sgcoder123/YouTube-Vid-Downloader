@@ -61,11 +61,31 @@ def index():
         link = form.link.data
         link = clean_youtube_url(link)  # Clean the URL before processing
         format_choice = request.form.get('format', 'best')
+        
         if not link:
             flash("Please enter a YouTube link.", 'danger')
         else:
             try:
-                with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+                # Use bypass options for initial video info extraction
+                bypass_opts = {
+                    'quiet': True,
+                    'no_warnings': True,
+                    'extractor_args': {
+                        'youtube': {
+                            'skip': ['dash', 'hls'],
+                            'player_skip': ['configs'],
+                        }
+                    },
+                    'http_headers': {
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.5',
+                    },
+                    'sleep_interval': 1,
+                    'retries': 2,
+                }
+                
+                with yt_dlp.YoutubeDL(bypass_opts) as ydl:
                     info = ydl.extract_info(link, download=False)
                     video_info = {
                         'title': info.get('title'),
@@ -78,12 +98,19 @@ def index():
                 except Exception as e:
                     err_msg = str(e)
                     if any(x in err_msg.lower() for x in [
-                        'cookies', 'sign in', 'age-restricted', 'login', 'account', 'private', 'This video is only available', 'This video is not available', 'confirm your age']):
-                        flash("This video requires you to be signed in to YouTube. <a href='https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp' target='_blank' style='color:#2563eb;text-decoration:underline;'>Learn how to download restricted videos</a>.", 'danger')
-                        return render_template('index.html', form=form, download_url=None, filename=None, video_info=video_info)
+                        'cookies', 'sign in', 'age-restricted', 'login', 'account', 'private', 'This video is only available', 'This video is not available', 'confirm your age', 'bot']):
+                        flash("🔄 Video detected as restricted. Trying advanced bypass methods...", 'warning')
+                        # Try again with more aggressive bypass methods
+                        try:
+                            info, filename, file_bytes = download_youtube_video_to_memory(link, format_choice, use_aggressive_bypass=True)
+                            flash("✅ Successfully bypassed restrictions!", 'success')
+                        except Exception as e2:
+                            flash(f"❌ Unable to download this video. It may be heavily restricted: {str(e2)}", 'danger')
+                            return render_template('index.html', form=form, download_url=None, filename=None, video_info=video_info)
                     else:
                         flash(f"Error: {err_msg}", 'danger')
                         return render_template('index.html', form=form, download_url=None, filename=None, video_info=video_info)
+                    
                 _in_memory_files[filename] = file_bytes
                 download_url = url_for('download_file', filename=filename)
                 download_links = {'best': None, 'video': None, 'audio': None}
@@ -122,6 +149,15 @@ def cancel_download():
         progress_data['status'] = 'cancelled'
     return jsonify({'status': 'cancelled'})
 
+# --- Clear Form API ---
+@app.route('/clear_form', methods=['POST'])
+def clear_form():
+    reset_progress()
+    # Clear in-memory files to free up memory
+    global _in_memory_files
+    _in_memory_files.clear()
+    return redirect(url_for('index'))
+
 # --- yt-dlp Progress Hook ---
 def ytdlp_progress_hook(d):
     with progress_lock:
@@ -159,17 +195,63 @@ def ytdlp_progress_hook(d):
         sys.stderr.flush()
 
 # --- Download Logic ---
-def download_youtube_video_to_memory(link, format_choice='best'):
+def download_youtube_video_to_memory(link, format_choice='best', use_aggressive_bypass=False):
     import io
     import tempfile
     from yt_dlp.utils import DownloadError
     from flask import current_app
     import platform
+    import time
+    import random
 
     # Determine the temp directory for serverless (Vercel only allows /tmp)
     downloads_dir = '/tmp'
 
-    cookies_path = os.path.join(os.path.dirname(__file__), 'cookies.txt')
+    def get_bypass_options(aggressive=False):
+        """Get bypass options for yt-dlp"""
+        base_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Cache-Control': 'max-age=0',
+        }
+        
+        bypass_opts = {
+            'extractor_args': {
+                'youtube': {
+                    'skip': ['dash', 'hls'] if not aggressive else ['dash'],
+                    'player_skip': ['configs'] if not aggressive else [],
+                    'player_client': ['android', 'web'] if aggressive else ['web'],
+                }
+            },
+            'http_headers': base_headers,
+            'retries': 5 if aggressive else 3,
+            'fragment_retries': 5 if aggressive else 3,
+            'sleep_interval': 1,
+            'max_sleep_interval': 3 if aggressive else 5,
+            'prefer_ipv6': False,
+            'no_check_certificate': True,
+            'ignoreerrors': False,
+            'socket_timeout': 30,
+        }
+        
+        if aggressive:
+            # More aggressive bypass options
+            bypass_opts.update({
+                'format_sort': ['res:720', 'ext:mp4:m4a'],
+                'extract_flat': False,
+                'youtube_include_dash_manifest': False,
+            })
+            
+        return bypass_opts
+
     # Use a temp file for yt_dlp output
     with tempfile.NamedTemporaryFile(suffix='.tmp', delete=True) as tmpfile:
         ydl_opts = {}
@@ -179,6 +261,10 @@ def download_youtube_video_to_memory(link, format_choice='best'):
             'nopart': True,      # Do not use .part files
             'noprogress': True,  # Do not use .progress files
         }
+        
+        # Get bypass options
+        bypass_options = get_bypass_options(use_aggressive_bypass)
+        
         if format_choice == 'audio':
             # Output template to Downloads folder with unique suffix and .mp3 extension
             unique_id = uuid.uuid4().hex[:8]
@@ -197,7 +283,8 @@ def download_youtube_video_to_memory(link, format_choice='best'):
                 'logtostderr': False,
                 'force_overwrites': True,
                 'postprocessor_hooks': [],
-                **common_opts
+                **common_opts,
+                **bypass_options
             }
         elif format_choice == 'video':
             # Output template to Downloads folder with unique suffix
@@ -214,7 +301,8 @@ def download_youtube_video_to_memory(link, format_choice='best'):
                 'logtostderr': False,
                 'force_overwrites': True,
                 'postprocessor_hooks': [],
-                **common_opts
+                **common_opts,
+                **bypass_options
             }
         else:  # best (video+audio)
             unique_id = uuid.uuid4().hex[:8]
@@ -232,65 +320,57 @@ def download_youtube_video_to_memory(link, format_choice='best'):
                 'logtostderr': False,
                 'force_overwrites': True,
                 'postprocessor_hooks': [],
-                **common_opts
+                **common_opts,
+                **bypass_options
             }
-        if os.path.exists(cookies_path):
-            ydl_opts['cookiefile'] = cookies_path
         with progress_lock:
             progress_data['percent'] = 0
             progress_data['status'] = 'downloading'
+        
         filename = None
         info = None
+        
         try:
             # Always extract the first entry's URL if playlist/radio, then re-extract and download for that URL
-            with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+            bypass_extract_opts = {
+                'quiet': True,
+                **get_bypass_options(use_aggressive_bypass)
+            }
+            
+            with yt_dlp.YoutubeDL(bypass_extract_opts) as ydl:
                 info_dict = ydl.extract_info(link, download=False)
                 if info_dict.get('_type') == 'playlist' and info_dict.get('entries'):
                     first_entry = next((e for e in info_dict['entries'] if e), None)
                     if first_entry:
                         link = first_entry.get('webpage_url') or first_entry.get('url')
                         info_dict = ydl.extract_info(link, download=False)
-            if format_choice == 'audio':
-                # Download directly to Downloads folder
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(link, download=True)
-                    filename = ydl.prepare_filename(info)
+            
+            # Download the video
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(link, download=True)
+                filename = ydl.prepare_filename(info)
+                
+                # Handle different formats
+                if format_choice == 'audio':
                     # Find the actual mp3 file (yt-dlp may output .m4a first, then .mp3 after postprocessing)
                     base, _ = os.path.splitext(filename)
                     mp3_filename = base + '.mp3'
                     if os.path.exists(mp3_filename):
                         filename = mp3_filename
-                    # Read the file from Downloads folder
-                    with open(filename, 'rb') as f:
-                        file_bytes = f.read()
-            elif format_choice == 'video':
-                # Download directly to Downloads folder
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(link, download=True)
-                    filename = ydl.prepare_filename(info)
+                else:
+                    # For video formats, ensure .mp4 extension
                     filename = os.path.splitext(filename)[0] + '.mp4'
-                    # Remove any existing file before reading (safety)
-                    if os.path.exists(filename):
-                        pass  # File just created, so this is safe
-                    # Read the file from Downloads folder
-                    with open(filename, 'rb') as f:
-                        file_bytes = f.read()
-            else:
-                # Download directly to Downloads folder
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(link, download=True)
-                    filename = ydl.prepare_filename(info)
-                    filename = os.path.splitext(filename)[0] + '.mp4'
-                    # Remove any existing file before reading (safety)
-                    if os.path.exists(filename):
-                        pass  # File just created, so this is safe
-                    # Read the file from Downloads folder
-                    with open(filename, 'rb') as f:
-                        file_bytes = f.read()
+                
+                # Read the file
+                with open(filename, 'rb') as f:
+                    file_bytes = f.read()
+                    
             with progress_lock:
                 progress_data['percent'] = 100
                 progress_data['status'] = 'finished'
+                
             return info, os.path.basename(filename), file_bytes
+            
         except DownloadError as e:
             with progress_lock:
                 progress_data['status'] = 'error'
